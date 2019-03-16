@@ -1,0 +1,1041 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+
+
+namespace DNN
+{
+    class CNN
+    {
+        public static Conv conv2;
+        public static Conv conv4;
+        public static Pool pool3;
+        public static Pool pool5;
+        public static Layer layer4;
+        public static double[,,] aIn1, aIn2;
+        static void Main(string[] args)
+        {
+            tryWandb();
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    readTxt();
+            //    ////for (int j = 0; j < 10; j++)
+            //    ////{
+            //    //readTxt();
+            //    ////}
+            //    //Console.WriteLine();
+            //    //if (layer4.a[5] > 0.7)
+            //    //{
+            //    //    break;
+            //    //}
+            //}
+
+            
+
+        }
+        public static void readTxt()
+        {
+            int i = 0, m = 0, n = 0,jtemp= 0;
+            char[] charLine = null;
+            string stringLine = null;
+            double[,,] data = new double[1, 25, 25];
+            FileStream w = new FileStream("F:\\w.txt", FileMode.Create);
+            FileStream f1 = new FileStream("F:\\1.txt", FileMode.Open);
+            FileStream f2 = new FileStream("F:\\2.txt", FileMode.Open);
+            FileStream f3 = new FileStream("F:\\3.txt", FileMode.Open);
+            FileStream f4 = new FileStream("F:\\4.txt", FileMode.Open);
+            FileStream f5 = new FileStream("F:\\5.txt", FileMode.Open);
+            FileStream f6 = new FileStream("F:\\6.txt", FileMode.Open);
+            List<FileStream> file = new List<FileStream>();
+            file.Add(f1);
+            file.Add(f2);
+            file.Add(f3);
+            file.Add(f4);
+            file.Add(f5);
+            file.Add(f6);
+            List<StreamReader> sr = new List<StreamReader>();
+            sr.Add(new StreamReader(file[0]));
+            sr.Add(new StreamReader(file[1]));
+            sr.Add(new StreamReader(file[2]));
+            sr.Add(new StreamReader(file[3]));
+            sr.Add(new StreamReader(file[4]));
+            sr.Add(new StreamReader(file[5]));
+            while (true)
+            {
+                i = i % 6;
+                if (jtemp == 5994)
+                {
+                    break;
+                }
+                jtemp++;
+                for (m = 0; m < 25; m++)
+                {
+                    stringLine = sr[i].ReadLine();
+                    charLine = stringLine.ToCharArray();
+                    for (n = 0; n < 25; n++)
+                    {
+                        data[0, m, n] = charLine[n] - 48;
+                    }
+                }
+                sr[i].ReadLine();
+                conv2.GetA(1, 25, data);
+                pool3.GetMaxA(1, 20, conv2.a);
+                layer4.Finala(pool3.a1);
+                if (layer4.a[i] > 700)
+                {
+                    break;
+                }
+                layer4.ChangeFinal(i);
+                pool3.MaxFanChange(1, 10, 6, layer4.change, conv2.a, layer4.w);
+                conv2.FinalChange(pool3.change);
+                layer4.ChangeAll(pool3.a1);
+                conv2.ChangeAll(1, data);
+                i++;
+            }
+            for (i = 0;i < 6; i++)
+            {
+                for (m = 0; m < 25; m++)
+                {
+                    stringLine = sr[i].ReadLine();
+                    charLine = stringLine.ToCharArray();
+                    for (n = 0; n < 25; n++)
+                    {
+                        data[0, m, n] = charLine[n] - 48;
+                    }
+                }
+                sr[i].ReadLine();
+                conv2.GetA(1, 25, data);
+                pool3.GetMaxA(1, 20, conv2.a);
+                layer4.Finala(pool3.a1);
+                layer4.ChangeFinal(i);
+                pool3.MaxFanChange(1, 10, 6, layer4.change, conv2.a, layer4.w);
+                conv2.FinalChange(pool3.change);
+                layer4.ChangeAll(pool3.a1);
+                conv2.ChangeAll(1, data);
+                Console.WriteLine(layer4.a[i]);
+            }
+            for (i = 0;i < 6;i++)
+            {
+                sr[i].Close();
+            }
+            StreamWriter sw = new StreamWriter(w);
+            for (m = 0;m < 6;m++)
+            {
+                sw.Write("{");
+                for (n = 0;n < 6;n++)
+                {
+                    sw.Write(conv2.w[0,0,m,n].ToString() + ",");
+                }
+                sw.Write("},");
+                sw.WriteLine();
+            }
+            sw.Write(conv2.b[0].ToString());
+            sw.WriteLine();
+            for (m = 0;m < 6;m++)
+            {
+                sw.Write("{");
+                for (n = 0;n < 100;n++)
+                {
+                    sw.Write(layer4.w[m,n].ToString() + ",");
+                }
+                sw.Write("},");
+                sw.WriteLine();
+            }
+            sw.Write("{");
+            for (m = 0;m< 6;m++)
+            {
+                sw.Write(layer4.b[m].ToString() + ",");
+            }
+            sw.Write("},");
+            sw.WriteLine();
+            sw.WriteLine();
+            sw.Close();
+        }
+        public static void train()
+        {
+            double[,,,] w2 = new double[1, 1, 6, 6];
+            double[] b2 = new double[1] { 0 };
+            double[,] w4 = new double[6, 100];
+            double[] b4 = new double[6];
+            int i, j, m, n;
+            for (i = 0; i < 1; i++)
+            {
+                for (j = 0; j < 1; j++)
+                {
+                    for (m = 0; m < 6; m++)
+                    {
+                        for (n = 0; n < 6; n++)
+                        {
+                            Hashtable hashtable = new Hashtable();
+                            int seed = Guid.NewGuid().GetHashCode();
+                            Random random = new Random(seed);
+                            w2[i, j, m, n] = (double)random.Next(0, 1000) / 10000 - 0.05;
+                        }
+                    }
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b2[i] = (double)random1.Next(0, 1000) / 10000 - 0.05;
+            }
+
+            for (i = 0; i < 6; i++)
+            {
+                for (j = 0; j < 100; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w4[i, j] = (double)random.Next(0, 1000) / 10000 - 0.05;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b4[i] = (double)random1.Next(0, 1000) / 10000 - 0.05;
+            }
+
+            conv2 = new Conv(1, 1, 6, w2, b2);
+            pool3 = new Pool(2);
+            layer4 = new Layer(100, 6, w4, b4);
+        }
+        public static void tryWandb()
+        {
+            double[,,,] w2 = new double[1, 1, 6, 6] {{{{-0.0554266340836056,-0.069956366366755,0.00549617303002367,0.020850757227472,0.116717048754181,0.265815617628852,},
+{0.107844117957994,0.160292315785459,0.176762551280069,0.24111146977899,-0.240232175146641,0.160226756254783,},
+{0.342839053630906,0.303402686090769,0.302740497126791,-0.0306693681493698,-0.394281261127332,-0.146284242103131,},
+{0.0382397611867012,0.372689157162421,0.334072438495125,0.167788330762691,-0.228744450639258,-0.122545159148598,},
+{0.352097335502542,0.730644560656294,0.520751313240611,0.534017506070366,-0.175174265107022,-0.335906975144954,},
+{0.534474952521174,0.827718251904606,0.209881801102118,0.334388642483027,-0.325021670658103,-0.348563269769853,} } }};
+            double[] b2 = new double[1] { -0.398164615893066 };
+            double[,] w4 = new double[6, 100] { {-0.473555759146925,-0.481376683876312,-0.343003139006085,-0.417839960413302,-0.660440504858718,-0.48677085220931,-0.891249133041993,-0.97121834493864,-0.351990697291046,-0.495914544546277,-0.467180227041766,-0.716341446311729,-0.718681933865339,-0.828620668251224,-0.802267416871831,-0.78049239867544,-0.669156425407504,-0.711371377241546,0.0259751632696036,-0.673958444078196,-0.478207928373862,-0.68792516885822,-0.87653805098027,-0.873451102792643,-0.75257500943718,-1.04327831228104,-0.478521301550727,0.0990944060114556,-0.0565667883402204,-0.719075216229683,-0.385081456203027,-0.0770131465426617,0.183831847329279,0.144643396008672,0.0459037067732606,-0.299047459175264,-0.136251676785819,0.344938471627663,0.237224598604935,-0.567867218492883,-0.308309671812436,-0.0957822250689123,0.296073850412354,0.503181675308544,0.270697646090271,0.126640588533314,-0.00295024529240595,0.306066244761517,0.363366872858008,-0.0725466200797792,0.241142342348259,0.387907437929867,0.449286094345655,0.41869880256806,0.179200862832609,0.187119788784204,0.031404215053417,0.157242538432462,0.286828682089726,0.328329375860175,0.439106904559471,0.393638947865559,0.253282197502233,0.177363035917647,0.0228769041688244,-0.0141458883024604,0.0600180217577852,0.104504408523305,0.34452845795994,0.568980989999036,0.357924224782835,0.327665637061008,0.159376521784671,0.168814901927871,0.162983390948053,0.124576518823086,0.153102430167668,0.130394113400353,0.22143578036092,0.456490671315098,0.0400833466890667,0.259749642975193,0.135853295982044,0.154624552976776,0.0927846744327232,0.13535880065461,0.20646366436741,0.0151235479460763,0.0471498858123123,0.311178482790755,-0.469323232176166,-0.134021956337783,0.212150393781095,0.190515529138459,0.110005455239353,0.129800744350711,0.0849413967462829,-0.24025199609308,-0.0828788195580337,0.31582020001089,},
+{0.494538842582804,0.0831364232224263,-0.301883411220516,0.105611866704863,-0.325049472665345,-0.527635469461898,-0.105927315192042,-0.284596351960954,-0.640733379985236,0.295874567860164,-0.20491518793293,0.114402053649426,-0.0902370711518112,-0.320763770550751,0.102378509656879,0.433436027145819,-0.50533991105732,0.110467809204602,-0.112465658341745,0.0942891542044157,-1.12443535171867,0.0427804862106867,0.170964980722292,-0.04265446738367,0.393772529294009,0.245178153551506,-0.283841417961631,0.059964344226842,0.504761092414609,0.0499391912640875,-0.866746149029508,-0.503128185591977,-0.380671807447728,-0.503175119485845,0.0574433243007233,-0.151301764628938,-0.232583873548479,0.278547629119225,0.515743501567689,-0.0318191890365545,-0.0139247442992127,0.165015303095499,-0.697147201778291,-0.440018402540028,-0.00552682027307686,-0.0612397376092866,0.113501183703389,0.536986610850912,0.507573416842358,0.0971548787580396,0.470214656189884,0.386616620179679,-0.660873257023585,-0.564614305760353,-0.0698501123952434,0.0282631213404301,0.0666270857477309,0.189423239293596,0.263670409885135,0.268983121553958,0.634901543353975,0.200266774319439,-0.14079439054749,0.0100239613402493,0.069087592787409,0.0418438373154654,-0.0107884983154422,0.13842052926066,-0.373684288202464,0.108160830252863,0.260036517650953,-0.116401494000013,-0.00406742992457532,0.134257512519649,-0.0411918089479488,0.113036772982365,0.0521289469132254,0.0609926074767501,-0.21930654257919,0.276594985178077,0.287982188382772,-0.200249232742711,0.163450716039207,0.232921967212801,0.063980694351659,-0.0281986225791399,-0.0561701662697351,0.0558585164307237,-0.0421038601195617,0.444244257254489,0.465847960467794,0.0472425009017657,-0.205488277587389,0.0584167653048595,0.13283551329002,0.0192501559495587,0.0210038271657001,0.0158312114948074,-0.0816899072437425,0.273478571991572,},
+{0.671388830752564,0.435003078906732,-0.092628193540593,-0.305384749411649,0.224361976890583,0.462372694982207,0.460558937950978,0.133559082076108,0.0387161289623649,0.0305938914033377,0.311881390474146,0.470445233270297,0.165153320133882,0.277528575132189,0.324668427217676,0.272248371392115,0.41896720892548,-0.161385926974002,-0.10689736676658,0.456079274224214,0.306299787627168,0.545994165523989,0.680873481884568,0.095818880665311,0.171202752602314,0.877983339649065,0.23836879976313,-0.335553197637862,0.164848277324605,0.371192744557166,-0.393295790565762,0.222953046681109,0.703836937311661,0.157907925626212,-0.229519940670645,0.544735901320418,-0.0320307521772734,-0.337568077736956,0.0445670705738484,0.600609907510704,-0.593385219303252,-0.565753830228011,0.414796373379352,0.186002292428098,-0.0672957562899636,0.0351818337387965,-0.0730772938404289,-0.465455387435957,0.0866250372891074,0.163150305107519,-1.01390660995087,-1.0065337922342,-0.00304100669851181,0.263896113142388,-0.0195164718572746,-0.13151027916344,0.0114707631932139,-0.077389196497809,0.154608713797461,-0.131144464016581,-0.518885177312997,-0.374997419202019,-0.157623531834583,-0.171736937262386,-0.0875615845269967,-0.0923223816421963,-0.0617432238708011,-0.0115826553113523,0.195644611118611,-0.449529481597049,0.129435648266132,0.0614167838618727,-0.0239631316236785,-0.199497032330845,-0.144237204304945,-0.128350656576448,-0.0108922716439946,-0.0306853229915534,0.0577352680609234,-0.573699600672079,0.489507309097984,0.155637844573181,-0.226386484970849,-0.180668614480948,-0.074552786442162,-0.0621702036636283,-0.0532960696274371,-0.162246963593279,-0.0641321895645825,-0.439430064969704,0.625705973506191,0.251707498266958,0.0155542439972675,-0.145795007585166,-0.155017110171996,-0.109475244015666,-0.149396633362576,-0.214412170007973,-0.160833002573673,0.154674746354079,},
+{-0.674558492307779,-0.351345282745974,0.0980065386414064,0.421617231344109,0.14951967557976,-0.0834382038298893,0.345102320112883,0.387975143760991,-0.0701311930414601,-0.340068082413511,0.0868602939143599,-0.279406658764038,-0.0197100328260982,0.574149569146742,-0.00325909417503029,-0.124253862605779,0.600021605546511,0.109051053480509,-0.410422295226208,-0.00239667476078935,0.62169344836909,-0.292816501088964,-0.462180695098434,0.602939710830381,0.0105311623327968,-0.243899046733924,0.588058065565935,-0.257888263755618,-0.540080415560314,0.602454869960914,0.724180322137873,0.20499170790006,-1.02012678522635,0.0400014085817861,0.21306040554113,-0.0620474005594654,0.314546465690751,-0.417163048421568,-0.102138863189175,0.827225947296754,0.487650355084995,0.449044220927077,-0.317133926724124,-0.230996872619634,0.0471062293099848,-0.0607716726832645,-0.0557714247143166,-0.0622547675122483,0.157551748386255,0.61226245893424,0.0622802357099852,0.131479353229371,0.125065449665511,-0.005832411528036,0.0847898997972143,0.0458989604231546,-0.0510970329249414,0.0250774683685598,0.283406347154062,0.215049151153388,-0.288575029692265,-0.286240067721213,-0.016274908297249,0.151499862059321,0.129348034302271,0.0344195064948525,-0.0255733848364021,0.0604926956616647,0.063395377173138,-0.0681037910568231,-0.425393852656878,-0.354143886351014,-0.258547786763943,-0.0551559463641371,0.039971485279177,0.000717604901486073,-0.0152381969437902,0.0371310562918389,-0.104244651640815,-0.309091249948973,-0.300030473646052,-0.202179182366362,-0.151943141336521,-0.170663237663755,0.0677389618216245,0.0427406256852605,0.0341420184373137,0.110971152741807,-0.115030973104459,-0.185678693446809,-0.170288895255327,-0.0522416623252125,-0.127207525988266,-0.132532297642561,-0.0627580709777177,0.0589161765032966,0.0657086272598442,0.00178813404366819,-0.129843958557309,-0.186594511228725,},
+{-0.153520623432229,0.082968912282483,0.0774484331955968,-0.134756229119706,0.300399461142803,0.0193968277317336,-0.113800189020906,0.318736353565558,0.0343770355580926,-0.424748628687004,-0.000255811134118238,-0.004531031856483,0.138388968577213,-0.0813025029821319,0.138034725810918,0.0307877951585598,-0.0114883002018756,0.305114796539253,-0.0929177574678407,-0.53743888614522,0.233528898282052,-0.188087432775155,0.119641038288589,0.14329393963141,0.114307035527287,0.00914315744029962,0.0366281959228768,0.28527561710202,-0.254450761318613,-0.780333131185792,0.370917011453884,-0.0867746516298208,0.0987794452467724,0.125384467254358,0.164185862107719,0.0348968662372611,0.336371520257244,0.160998519645561,-0.581570805021556,-0.874957580409364,0.022686439050039,0.109950900354247,0.0755280690546824,0.156494986123457,0.0806836979769485,0.0846862579361388,0.346355197620332,-0.00274828495856138,-0.900828909239681,-0.645659553313413,-0.231482572368766,0.0478854863679796,0.160320759135658,0.118073764145972,0.0254290121757856,0.126759577156465,0.301305330854224,-0.115886178774295,-0.7083635145826,-0.347051280103917,-0.260856755662325,-0.00625556547805884,0.106973417864502,0.0648498968524404,0.0105750199183555,0.121363561042372,0.241098363780743,-0.0623163417372131,-0.265889728276773,-0.0704566101465067,-0.218521609351079,-0.0240609523165071,0.0302922530039297,0.0469777156166081,0.0137878051515902,0.0873368195393328,0.073397892139413,-0.0461097296344453,0.00234648351443732,0.179689814556158,-0.150530794740309,0.00703303960585589,-0.00293774435745824,0.117725661504061,0.0756053592895434,0.133846858117268,0.0815538559805179,0.0265789694780006,0.23528632185152,0.0850160791802782,-0.0985638686664494,-0.028305943181934,0.0477070299647462,0.0814313157254046,0.0244541307062902,0.0969941440719882,0.149199800078318,0.159325866833741,0.19798934276578,-0.179190071274807,},
+{0.0859072015523445,0.264313552211101,0.623759771930889,0.227951840896205,0.326308863912075,0.636775002788239,0.365915379192115,0.407544117497968,0.888862105797839,0.819662796384181,0.303909541720866,0.439631850013345,0.506286749132867,0.332608797506191,0.264344848362319,0.354474067585698,0.170795822196028,0.299923644992055,0.673127914533161,0.679125576556984,0.412321145815811,0.416254450988689,0.361139245184293,0.0686530390502818,0.10416152968167,0.229372708375601,-0.0842923417386396,0.213207094053814,0.220488595481096,0.418821541635064,0.481926062207654,0.291071229184138,0.361150362787671,-0.0859620779845929,-0.194873358051675,0.0521638568068189,-0.275851683435628,-0.0221534942329117,-0.174725502534556,0.125808133132979,0.475482841280834,0.04952563092092,0.0966828356572813,-0.124263678699575,-0.248964996813764,-0.229597269915492,-0.383857417476201,-0.199894415704723,-0.24378816613472,-0.145861469405516,0.351251948072566,-0.000455105471679709,-0.0877580394238113,-0.0772219625672119,-0.201253190552857,-0.254731168540464,-0.360210361923307,-0.26296787082218,-0.241250638342426,-0.233865904446178,0.0129085147552909,0.113087330217112,-0.0388627846870882,-0.175499818906891,-0.161025966649667,-0.165958634907887,-0.209511278515671,-0.253418636396864,-0.0866944297717036,-0.236151937450538,-0.139480928691164,0.0381239117451761,0.05310957352385,-0.164197151368804,-0.189813668125682,-0.174217059669618,-0.156198800632345,-0.150222724542812,0.0573336622840187,-0.139884620427258,-0.342711575782703,0.034407887955236,0.0644633586439362,-0.0769403295484898,-0.145656903453169,-0.225777458214061,-0.190993302887818,-0.072285223003147,0.0761308151250463,-0.260230060808281,-0.385677937875299,-0.0998804373235655,-0.0286158641671995,-0.00373630494066984,-0.164619918085711,-0.142285976859692,-0.100057017887274,0.147318953729227,0.173856345167389,-0.311188935852202,}};
+            double[] b4 = new double[6]   { 0.202229197254762, -0.080122545674865, -0.211902152405269, -0.0152339889615639, 0.276670589178278, -0.20254109939044 } ;
+            conv2 = new Conv(1, 1, 6, w2, b2);
+            pool3 = new Pool(2);
+            layer4 = new Layer(100, 6, w4, b4);
+
+            int i = 0, m = 0, n = 0, k;
+            char[] charLine = null;
+            string stringLine = null;
+            double[,,] data = new double[1, 25, 25];
+            FileStream f1 = new FileStream("D:\\1.txt", FileMode.Open);
+            FileStream f2 = new FileStream("D:\\2.txt", FileMode.Open);
+            FileStream f3 = new FileStream("D:\\3.txt", FileMode.Open);
+            FileStream f4 = new FileStream("D:\\4.txt", FileMode.Open);
+            FileStream f5 = new FileStream("D:\\5.txt", FileMode.Open);
+            FileStream f6 = new FileStream("D:\\6.txt", FileMode.Open);
+            List<FileStream> file = new List<FileStream>();
+            file.Add(f1);
+            file.Add(f2);
+            file.Add(f3);
+            file.Add(f4);
+            file.Add(f5);
+            file.Add(f6);
+            int jTemp = 0,zTemp = 0,fTemp = 0; 
+            for (i = 0; i < file.Count; i++)
+            {
+                StreamReader sr = new StreamReader(file[i]);
+                for (k = 0; k < 1000; k++)
+                {
+                    for (m = 0; m < 25; m++)
+                    {
+                        stringLine = sr.ReadLine();
+                        charLine = stringLine.ToCharArray();
+                        for (n = 0; n < 25; n++)
+                        {
+                            data[0, m, n] = charLine[n] - 48;
+                        }
+                    }
+                    conv2.GetA(1, 25, data);
+                    pool3.GetMaxA(1, 20, conv2.a);
+                    layer4.Finala(pool3.a1);
+                    if (layer4.a[i] < 0.5)
+                    {
+                        jTemp++;
+                        for (int p = 0; p < 25; p++)
+                        {
+                            if (data[0, 7, p] == 1)
+                            {
+                                zTemp++;
+                                for (; p < 25; p++)
+                                {
+                                    if (data[0, 7, p] == 0 || p == 24)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (i != 5)
+                        {
+                            if (zTemp == i)
+                            {
+                                fTemp++; ;
+                            }
+                        }
+                        else
+                        {
+                            if (zTemp == 4)
+                            {
+                                fTemp++;
+                            }
+                        }
+                        zTemp = 0;
+                    }
+                    sr.ReadLine();
+                }
+                jTemp = 0;
+                fTemp = 0;
+                sr.Close();
+            }
+            return;
+        }
+        public static void ChuanCan()
+        {
+            int i = 0, j = 0, m = 0, n = 0;
+            double[,,,] convW2 = new double[2, 1, 3, 3];
+            double[,,,] convW4 = new double[2, 2, 3, 3];
+            double[] convB2 = new double[2];
+            double[] convB4 = new double[2];
+            double[,,,] w2 = new double[2, 1, 3, 3];
+            double[] b2 = new double[2];
+            double[,,,] w4 = new double[2, 2, 3, 3];
+            double[] b4 = new double[2];
+            double[,] w6 = new double[2, 2];
+            double[] b6 = new double[2];
+            double[,] w7 = new double[3, 2] { { 0.1, 0.2 }, { 0.3, 0.4 }, { 0.5, 0.6 } };
+            double[] b7 = new double[3] { 0.3, 0.2, 0.1 };
+            aIn1 = new double[2, 10, 10];
+            aIn2 = new double[2, 10, 10];
+            for (i = 0; i < 10; i++)
+            {
+                for (j = 0; j < 10; j++)
+                {
+                    if (i < 5)
+                    {
+                        aIn1[1, i, j] = aIn1[0, i, j] = 1;
+                        aIn2[1, i, j] = aIn2[0, i, j] = 0;
+                    }
+                    else
+                    {
+                        aIn1[1, i, j] = aIn1[0, i, j] = 0;
+                        aIn2[1, i, j] = aIn2[0, i, j] = 1;
+                    }
+                }
+            }
+
+            for (i = 0; i < 2; i++)
+            {
+                for (j = 0; j < 1; j++)
+                {
+                    for (m = 0; m < 3; m++)
+                    {
+                        for (n = 0; n < 3; n++)
+                        {
+                            Hashtable hashtable = new Hashtable();
+                            int seed = Guid.NewGuid().GetHashCode();
+                            Random random = new Random(seed);
+                            w2[i, j, m, n] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                        }
+                    }
+
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b2[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+
+            for (i = 0; i < 2; i++)
+            {
+                for (j = 0; j < 2; j++)
+                {
+                    for (m = 0; m < 3; m++)
+                    {
+                        for (n = 0; n < 3; n++)
+                        {
+                            Hashtable hashtable = new Hashtable();
+                            int seed = Guid.NewGuid().GetHashCode();
+                            Random random = new Random(seed);
+                            w4[i, j, m, n] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                        }
+                    }
+
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b4[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+
+            for (i = 0; i < 2; i++)
+            {
+                for (j = 0; j < 2; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w6[i, j] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b6[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+
+            for (i = 0; i < 3; i++)
+            {
+                for (j = 0; j < 2; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w7[i, j] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b7[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+
+            for (i = 0; i < 2; i++)
+            {
+                for (j = 0; j < 1; j++)
+                {
+                    for (m = 0; m < 3; m++)
+                    {
+                        for (n = 0; n < 3; n++)
+                        {
+                            Hashtable hashtable = new Hashtable();
+                            int seed = Guid.NewGuid().GetHashCode();
+                            Random random = new Random(seed);
+                            convW2[i, j, m, n] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                        }
+                    }
+
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                convB2[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+            for (i = 0; i < 2; i++)
+            {
+                for (j = 0; j < 2; j++)
+                {
+                    for (m = 0; m < 3; m++)
+                    {
+                        for (n = 0; n < 3; n++)
+                        {
+                            Hashtable hashtable = new Hashtable();
+                            int seed = Guid.NewGuid().GetHashCode();
+                            Random random = new Random(seed);
+                            convW4[i, j, m, n] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                        }
+                    }
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                convB4[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+            Conv conv2 = new Conv(1, 2, 3, w2, b2);
+            Pool pool3 = new Pool(2);
+            Conv conv4 = new Conv(2, 2, 3, w4, b4);
+            Pool pool5 = new Pool(2);
+            Layer p6 = new Layer(2, 2, w6, b6);
+            Layer p7 = new Layer(2, 3, w7, b7);
+            for (i = 0; i < 1000; i++)
+            {
+                conv2.GetA(1, 10, aIn1);
+                pool3.GetMaxA(2, 8, conv2.a);
+                conv4.GetA(2, 4, pool3.a);
+                pool5.GetMaxA(2, 2, conv4.a);
+                p6.Geta(pool5.a1);
+                //p7.Geta(p6.a);
+                //Console.WriteLine(p6.a[0] + " " + p6.a[1]);
+                p6.ChangeFinal(0);
+                //p6.ChangeWAndB(p7.change, p7.w, 3);
+                pool5.MaxFanChange(2, 1, 2, p6.change, conv4.a, p6.w);
+                conv4.FinalChange(pool5.change);
+                pool3.ChangeWAndB(2, 3, 2, conv4.lengthA, conv4.change, conv4.w);
+                conv2.FinalChange(pool3.change);
+
+                //p7.ChangeAll(p6.a);
+                p6.ChangeAll(pool5.a1);
+                conv4.ChangeAll(2, pool3.a);
+                conv2.ChangeAll(1, aIn1);
+
+
+
+                conv2.GetA(1, 10, aIn2);
+                pool3.GetMaxA(2, 8, conv2.a);
+                conv4.GetA(2, 4, pool3.a);
+                pool5.GetMaxA(2, 2, conv4.a);
+                p6.Geta(pool5.a1);
+                //p7.Geta(p6.a);
+                //Console.WriteLine(p6.a[0] + " " + p6.a[1]);
+                p6.ChangeFinal(1);
+                //p6.ChangeWAndB(p7.change, p7.w, 3);
+                pool5.MaxFanChange(2, 1, 2, p6.change, conv4.a, p6.w);
+                conv4.FinalChange(pool5.change);
+                pool3.ChangeWAndB(2, 3, 2, conv4.lengthA, conv4.change, conv4.w);
+                conv2.FinalChange(pool3.change);
+                //p7.ChangeAll(p6.a);
+                p6.ChangeAll(pool5.a1);
+                conv4.ChangeAll(2, pool3.a);
+                conv2.ChangeAll(1, aIn2);
+            }
+
+            conv2.GetA(1, 10, aIn1);
+            pool3.GetMaxA(2, 8, conv2.a);
+            conv4.GetA(2, 4, pool3.a);
+            pool5.GetMaxA(2, 2, conv4.a);
+            p6.Geta(pool5.a1);
+            //p7.Geta(p6.a);
+            Console.WriteLine(p6.a[0] + " " + p6.a[1]);
+            conv2.GetA(1, 10, aIn2);
+            pool3.GetMaxA(2, 8, conv2.a);
+            conv4.GetA(2, 4, pool3.a);
+            pool5.GetMaxA(2, 2, conv4.a);
+            p6.Geta(pool5.a1);
+            //p7.Geta(p6.a);
+            Console.WriteLine(p6.a[0] + " " + p6.a[1]);
+        }
+        public static void Front(double[,,] a)
+        {
+            conv2.GetA(1, 10, a);
+            pool3.GetMaxA(2, 8, conv2.a);
+            conv4.GetA(2, 4, pool3.a);
+            pool5.GetMaxA(2, 2, conv4.a);
+            DNN.Front(pool5.a1);
+
+
+            //conv2.GetA(1, 10, aIn1);
+            //pool3.GetMaxA(2, 8, conv2.a);
+            //conv4.GetA(2, 4, pool3.a);
+            //pool5.GetMaxA(2, 2, conv4.a);
+            //p6.Geta(pool5.a1);
+        }
+        public static void Back(int r)
+        {
+            DNN.Back(r);
+            pool5.MaxFanChange(2, 1, 2, DNN.p1.change, conv4.a, DNN.p1.w);
+            conv4.FinalChange(pool5.change);
+            pool3.ChangeWAndB(2, 3, 2, conv4.lengthA, conv4.change, conv4.w);
+            conv2.FinalChange(pool3.change);
+
+
+            //    p6.ChangeFinal(0);
+            //    pool5.MaxFanChange(2, 1, 2, p6.change, conv4.a, p6.w);
+            //    conv4.FinalChange(pool5.change);
+            //    pool3.ChangeWAndB(2, 3, 2, conv4.lengthA, conv4.change, conv4.w);
+            //    conv2.FinalChange(pool3.change);
+        }
+
+        public static void ChangeCNN(double[,,] a)
+        {
+            DNN.ChangeDNN(pool5.a1);
+            conv4.ChangeAll(2, pool3.a);
+            conv2.ChangeAll(1, a);
+
+            //    p6.ChangeAll(pool5.a1);
+            //    conv4.ChangeAll(2, conv2.lengthA / 2, pool3.a);
+            //    conv2.ChangeAll(1, 10, aIn1);
+        }
+    }
+    //卷积层
+    class Conv
+    {
+        //卷积核个数6
+        public int nC;
+        //卷积核大小
+        public int nW;
+        //偏置
+        public double[] b;
+        //卷积核权重
+        public double[,,,] w;
+        //反向传播误差
+        public double[,,] change;
+        //输出结果
+        public double[,,] a;
+        //输出长度
+        public int lengthA;
+        //输入长度
+        public int frontALength;
+
+        //构造函数
+        public Conv(int nData, int nConv, int nWeight, double[,,,] weight, double[] offset)
+        {
+            nC = nConv;
+            nW = nWeight;
+            a = null;
+            w = new double[nC, nData, nW, nW];
+            change = null;
+            b = new double[nC];
+            for (int i = 0; i < nC; i++)
+            {
+                for (int j = 0; j < nData; j++)
+                {
+                    b[i] = offset[i];
+                    for (int m = 0; m < nW; m++)
+                    {
+                        for (int n = 0; n < nW; n++)
+                        {
+                            w[i, j, m, n] = weight[i, j, m, n];
+                        }
+                    }
+                }
+            }
+        }
+        //前向传播
+
+        //nData-指的是卷积核组数（一组之中可以有多个卷积核）注意 输出的矩阵个数与此无关 与有多少个输入矩阵或者说有每组多少个卷积核有关
+        //Length-指的是输入矩阵的长度
+        //frontA-指的是上层输入矩阵的长度
+        public void GetA(int nData, int Length, double[,,] frontA)
+        {
+            frontALength = Length;
+            int i = 0, j = 0, m = 0, n = 0;
+            if (a == null)
+            {
+                a = new double[nC, frontALength - nW + 1, frontALength - nW + 1];
+                change = new double[nC, frontALength - nW + 1, frontALength - nW + 1];
+                lengthA = frontALength - nW + 1;
+            }
+
+            int temp1 = 0;
+            int temp2 = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < frontALength - nW + 1; j++)
+                {
+                    for (m = 0; m < frontALength - nW + 1; m++)
+                    {
+                        a[i, j, m] = 0;
+                    }
+                }
+            }
+            i = j = m = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nData; j++)
+                {
+                    for (m = 0; m < frontALength - nW + 1; m++)
+                    {
+                        for (n = 0; n < frontALength - nW + 1; n++)
+                        {
+                            for (temp1 = 0; temp1 < nW; temp1++)
+                            {
+                                for (temp2 = 0; temp2 < nW; temp2++)
+                                {
+                                    int fm = m + temp1;
+                                    int fn = n + temp2;
+                                    a[i, m, n] += frontA[j, m + temp1, n + temp2] * w[i, j, temp1, temp2];
+                                }
+                            }
+                            a[i, m, n] += b[i] / nData;
+                            if (a[i, m, n] < 0)
+                            {
+                                a[i, m, n] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //反向传播修改权重和偏置
+        public void ChangeWAndB(int nData, int backLength, double[,,] backChange, double[,,,] backW)
+        {
+            int i = 0, j = 0, k = 0, l = 0, m = 0, n = 0;
+            double[,,] jChange = new double[nC, 2 * nW - 2 + backLength, 2 * nW - 2 + backLength];
+            //加0边
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < 2 * nW - 2 + backLength; j++)
+                {
+                    for (k = 0; k < 2 * nW - 2 + backLength; k++)
+                    {
+                        if (j >= nW - 1 && j <= nW + backLength - 2 && k >= nW - 1 && k <= nW + backLength - 2)
+                        {
+                            jChange[i, j, k] = backChange[i, j - nW + 1, k - nW + 1];
+                        }
+                        else
+                        {
+                            jChange[i, j, k] = 0;
+                        }
+                    }
+                }
+            }
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nW + backLength; j++)
+                {
+                    for (k = 0; k < nW + backLength; k++)
+                    {
+                        change[i, j, k] = 0;
+                    }
+                }
+            }
+            int zTemp = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nData; j++)
+                {
+                    for (k = 0; k < nW + backLength - 1; k++)
+                    {
+                        for (l = 0; l < nW + backLength - 1; l++)
+                        {
+                            for (m = nW - 1; m >= 0; m--)
+                            {
+                                for (n = nW - 1; n >= 0; n--)
+                                {
+                                    if (a[i, k, l] > 0)
+                                    {
+                                        zTemp = 1;
+                                    }
+                                    else
+                                    {
+                                        zTemp = 0;
+                                    }
+                                    change[i, k, l] += jChange[i, k + nW - 1 - m, l + nW - 1 - n] * backW[i, j, m, n] * zTemp;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //如果下一层是池化层 直接用 在下一层的池化中的change已经进行了放大以适应
+        public void FinalChange(double[,,] backChange)
+        {
+            change = backChange;
+        }
+
+        public void ChangeAll(int nData, double[,,] frontA)
+        {
+            int cLength = frontALength - lengthA + 1;
+            double[,,,] wChange = new double[nC, nData, cLength, cLength];
+            double[] bChange = new double[nC];
+            int i = 0, j = 0, m = 0, n = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nData; j++)
+                {
+                    for (m = 0; m < cLength; m++)
+                    {
+                        for (n = 0; n < cLength; n++)
+                        {
+                            for (int temp1 = 0; temp1 < lengthA; temp1++)
+                            {
+                                for (int temp2 = 0; temp2 < lengthA; temp2++)
+                                {
+                                    wChange[i, j, m, n] += frontA[j, m + temp1, n + temp2] * change[i, temp1, temp2];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (i = 0; i < nData; i++)
+            {
+                for (j = 0; j < lengthA; j++)
+                {
+                    for (m = 0; m < lengthA; m++)
+                    {
+                        bChange[i] += change[i, j, m];
+                    }
+                }
+            }
+
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nData; j++)
+                {
+                    for (m = 0; m < nW; m++)
+                    {
+                        for (n = 0; n < nW; n++)
+                        {
+                            w[i, j, m, n] = w[i, j, m, n] - 0.01 * wChange[i, j, m, n];
+                        }
+                    }
+                }
+                b[i] = b[i] - 0.01 * bChange[i];
+            }
+        }
+    }
+    //池化层
+    class Pool
+    {
+        //缩小的区域范围
+        public int length;
+        //输出
+        public double[,,] a;
+        public double[] a1;
+        public double[,,] change;
+        public double[,,] maxPool;
+        public Pool(int n)
+        {
+            maxPool = null;
+            a1 = null;
+            a = null;
+            change = null;
+            length = n;
+        }
+        //将传入的参数 按照范围内最大值来进行保留 缩小矩阵
+        public void GetMaxA(int nC, int frontLength, double[,,] frontA)
+        {
+            if (maxPool == null)
+            {
+                maxPool = new double[nC, frontLength, frontLength];
+            }
+            if (a == null)
+            {
+                a = new double[nC, frontLength / length, frontLength / length];
+                a1 = new double[nC * frontLength / length * frontLength / length];
+            }
+            int i = 0, j = 0, k = 0, m = 0, n = 0, temp1 = 0, temp2 = 0, zTemp = 0;
+            double jTemp = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < frontLength / length; j++)
+                {
+                    for (k = 0; k < frontLength / length; k++)
+                    {
+                        for (m = 0; m < length; m++)
+                        {
+                            for (n = 0; n < length; n++)
+                            {
+                                maxPool[i, j * length + m, k * length + n] = 0;
+                                if (frontA[i, j * length + m, k * length + n] > jTemp)
+                                {
+                                    temp1 = j * length + m;
+                                    temp2 = k * length + n;
+                                    jTemp = frontA[i, temp1, temp2];
+                                }
+                            }
+                        }
+                        maxPool[i, temp1, temp2] = 1;
+                        a[i, j, k] = jTemp;
+                        a1[zTemp++] = jTemp;
+                        jTemp = -1;
+                    }
+                }
+            }
+        }
+        public void GetA(int nData, int frontLength, double[,,] frontA)
+        {
+            int i = 0, j = 0, k = 0, m = 0, n = 0;
+            double temp = 0;
+            if (a == null)
+            {
+                a = new double[nData, frontLength / length, frontLength / length];
+                a1 = new double[nData * frontLength / length * frontLength / length];
+            }
+            int jTemp = 0;
+            for (i = 0; i < nData; i++)
+            {
+                for (j = 0; j < frontLength / length; j++)
+                {
+                    for (k = 0; k < frontLength / length; k++)
+                    {
+                        for (m = 0; m < length; m++)
+                        {
+                            for (n = 0; n < length; n++)
+                            {
+                                temp += frontA[i, j * length + m, k * length + n];
+                            }
+                        }
+                        a[i, j, k] = temp / Math.Pow(length, 2);
+                        a1[jTemp++] = a[i, j, k];
+                        temp = 0;
+                    }
+                }
+            }
+        }
+
+        //池化的相反操作 将传入的1维参数反池化还原为3维参数（误差偏置b的大小变化）
+        //nC-指的是每组卷积核有几个
+        //lengthA-指的是当前层输出矩阵的长度
+        //backLayer-指的是连接全连接层的神经元个数
+        //backChange-指的是与卷积池化层相连的全连接层的误差
+        //frontA-指的是上一层输入
+        //backW-指的是与卷积池化层相连的全连接层的权重矩阵
+        public void MaxFanChange(int nC, int lengthA, int backLayer, double[] backChange, double[,,] frontA, double[,] backW)
+        {
+            int i = 0, j = 0, k = 0, m = 0, n = 0, temp = 0;
+            if (change == null)
+            {
+                change = new double[nC, lengthA * length, lengthA * length];
+            }
+            double[] fChange = new double[lengthA * lengthA * nC];
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < backLayer; j++)
+                {
+                    fChange[i] += backW[j, i] * backChange[j];
+                }
+            }
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < lengthA; j++)
+                {
+                    for (k = 0; k < lengthA; k++)
+                    {
+                        for (m = 0; m < length; m++)
+                        {
+                            for (n = 0; n < length; n++)
+                            {
+                                if (maxPool[i, j * length + m, k * length + n] == 1)
+                                {
+                                    change[i, j * length + m, k * length + n] = fChange[temp++];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //
+        public void ChangeWAndB(int nData, int nW, int nC, int backLength, double[,,] backChange, double[,,,] backW)
+        {
+            int i = 0, j = 0, k = 0, l = 0, m = 0, n = 0;
+            double[,,] jChange = new double[nData, 2 * nW - 2 + backLength, 2 * nW - 2 + backLength];
+            double[,,] zChange = new double[nC, backLength * backLength, backLength * backLength];
+            if (change == null)
+            {
+                change = new double[nC, backLength * backLength * length, backLength * backLength * length];
+            }
+            //加0边
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < 2 * nW - 2 + backLength; j++)
+                {
+                    for (k = 0; k < 2 * nW - 2 + backLength; k++)
+                    {
+                        if (j >= nW - 1 && j <= nW + backLength - 2 && k >= nW - 1 && k <= nW + backLength - 2)
+                        {
+                            jChange[i, j, k] = backChange[i, j - nW + 1, k - nW + 1];
+                        }
+                        else
+                        {
+                            jChange[i, j, k] = 0;
+                        }
+                    }
+                }
+            }
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < backLength * backLength * length; j++)
+                {
+                    for (k = 0; k < backLength * backLength * length; k++)
+                    {
+                        change[i, j, k] = 0;
+                    }
+                }
+            }
+            int zTemp = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nData; j++)
+                {
+                    for (k = 0; k < nW + backLength - 1; k++)
+                    {
+                        for (l = 0; l < nW + backLength - 1; l++)
+                        {
+                            for (m = nW - 1; m >= 0; m--)
+                            {
+                                for (n = nW - 1; n >= 0; n--)
+                                {
+                                    if (a[i, k, l] > 0)
+                                    {
+                                        zTemp = 1;
+                                    }
+                                    else
+                                    {
+                                        zTemp = 0;
+                                    }
+                                    zChange[j, k, l] += jChange[i, k + nW - 1 - m, l + nW - 1 - n] * backW[i, j, m, n] * zTemp;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            double[] tempChange = new double[nC * (nW + backLength - 1) * (nW + backLength - 1)];
+            int temp = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < nW + backLength - 1; j++)
+                {
+                    for (k = 0; k < nW + backLength - 1; k++)
+                    {
+                        tempChange[temp++] = zChange[i, j, k];
+                    }
+                }
+            }
+            temp = 0;
+            for (i = 0; i < nC; i++)
+            {
+                for (j = 0; j < backLength * backLength; j++)
+                {
+                    for (k = 0; k < backLength * backLength; k++)
+                    {
+                        for (m = 0; m < length; m++)
+                        {
+                            for (n = 0; n < length; n++)
+                            {
+                                if (maxPool[i, j * length + m, k * length + n] == 1)
+                                {
+                                    change[i, j * length + m, k * length + n] = tempChange[temp++];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public void FanChange(int nData, int lengthA, int backLayer, double[] backChange, double[,,] frontA, double[,] backW)
+        {
+            if (change == null)
+            {
+                change = new double[nData, lengthA * length, lengthA * length];
+            }
+            int i = 0, j = 0, k = 0, temp = 0, jTemp = 0, zTemp = 0;
+            double[] fChange = new double[lengthA * lengthA * nData];
+
+            for (i = 0; i < lengthA * lengthA * nData; i++)
+            {
+                for (j = 0; j < backLayer; j++)
+                {
+                    fChange[i] += backW[j, i] * backChange[j];
+                }
+            }
+
+            for (i = 0; i < nData; i++)
+            {
+                for (j = 0; j < lengthA; j++)
+                {
+                    for (k = 0; k < lengthA; k++)
+                    {
+                        for (temp = 0; temp < length; temp++)
+                        {
+                            change[i, j * length, k * length]
+                                = change[i, j * length + temp, k * length]
+                                = change[i, j * length, k * length + temp]
+                                = change[i, j * length + temp, k * length + temp] = fChange[jTemp] / 4;
+                        }
+                        jTemp++;
+                    }
+                }
+            }
+        }
+    }
+}
