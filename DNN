@@ -1,0 +1,279 @@
+using System;
+using System.Collections;
+
+namespace DNN
+{
+    class DNN
+    {
+        public static Layer p1;
+        public static Layer p2;
+        public static Layer p3;
+        public static Layer p4;
+        public static double[] a1;
+        public static double[] a2;
+        public static void ChuanBo()
+        {
+            for (int i = 0; i < 10000; i++)
+            {
+                Front(a1);
+                Back(0);
+
+
+                Front(a2);
+                Back(1);
+            }
+            Front(a1);
+            Console.WriteLine(p4.a[0]);
+            Console.WriteLine(p4.a[1]);
+
+            Front(a2);
+            Console.WriteLine(p4.a[0]);
+            Console.WriteLine(p4.a[1]);
+        }
+
+        private static void changeAll(double[] a)
+        {
+            p1.ChangeAll(a);
+            p2.ChangeAll(p1.a);
+            p3.ChangeAll(p2.a);
+            p4.ChangeAll(p3.a);
+        }
+
+        public static void Front(double[] a)
+        {
+            p1.Geta(a);
+            p2.Geta(p1.a);
+            p3.Geta(p2.a);
+            p4.Geta(p3.a);
+        }
+        public static void Back(int r)
+        {
+            p4.ChangeFinal(r);
+            p3.ChangeWAndB(p4.change, p4.w, p4.length);
+            p2.ChangeWAndB(p3.change, p3.w, p3.length);
+            p1.ChangeWAndB(p2.change, p2.w, p2.length);
+
+            //p1.ChangeAll(a);
+            //p2.ChangeAll(p1.a);
+            //p3.ChangeAll(p2.a);
+            //p4.ChangeAll(p3.a);
+
+        }
+        public static void ChangeDNN(double[] a)
+        {
+            p1.ChangeAll(a);
+            p2.ChangeAll(p1.a);
+            p3.ChangeAll(p2.a);
+            p4.ChangeAll(p3.a);
+        }
+        public static void ChuanCan()
+        {
+            //第一个参数3是该层神经元数量 第二个2是每个神经元的权重个数并且对应上一层神经元个数
+            double[,] w1 = new double[2, 2];
+            double[] b1 = new double[2];
+            double[,] w2 = new double[3, 2];
+            double[] b2 = new double[3];
+            double[,] w3 = new double[3, 3];
+            double[] b3 = new double[3];
+            double[,] w4 = new double[10, 3];
+            double[] b4 = new double[10];
+            //第一个参数是上一层神经元的个数 第二个是该层神经元个数 第三个参数是该层神经元权重参数矩阵 第四个参数是该层神经元偏置
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w1[i, j] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b1[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w2[i, j] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b2[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w3[i, j] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b3[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    Hashtable hashtable = new Hashtable();
+                    int seed = Guid.NewGuid().GetHashCode();
+                    Random random = new Random(seed);
+                    w4[i, j] = (double)random.Next(0, 1000) / 1000 - 0.5;
+                }
+                Hashtable hashtable1 = new Hashtable();
+                int seed1 = Guid.NewGuid().GetHashCode();
+                Random random1 = new Random(seed1);
+                b4[i] = (double)random1.Next(0, 1000) / 1000 - 0.5;
+            }
+
+            p1 = new Layer(2, 2, w1, b1);
+            p2 = new Layer(2, 3, w2, b2);
+            p3 = new Layer(3, 3, w3, b3);
+            p4 = new Layer(3, 10, w4, b4);
+        }
+    }
+
+    class Layer
+    {
+        //偏导数值
+        public double[] change;
+        //该层神经元的个数
+        public int length;
+        int frontLength;
+        //输出
+        public double[] a;
+        //反向传播求偏导时使用
+        public double[] aTemp;
+        //该层权重参数
+        public double[,] w;
+        public double[] b;
+        //初始化传入权重和偏置
+        public Layer(int front, int myLength, double[,] weight, double[] offset)
+        {
+            length = myLength;
+            frontLength = front;
+            change = new double[length];
+            a = new double[length];
+            aTemp = new double[length];
+            w = new double[length, frontLength];
+            b = new double[length];
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < frontLength; j++)
+                {
+                    w[i, j] = weight[i, j];
+                }
+                b[i] = offset[i];
+            }
+        }
+        public void ChangeAll(double[] frontA)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                for (int j = 0; j < frontLength; j++)
+                {
+                    w[i, j] -=/* 0.995 */ 0.01 * change[i] * frontA[j];
+                }
+                b[i] -= 0.01 * change[i];
+            }
+        }
+        //作为中间层计算结果 用z=wa+b,以及s型神经元
+        public void Geta(double[] aFront)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                a[i] = 0;
+                for (int j = 0; j < frontLength; j++)
+                {
+                    a[i] += w[i, j] * aFront[j];
+                }
+                aTemp[i] = a[i] = a[i] + b[i];
+                a[i] = 1 / (1 + Math.Exp(-a[i]));
+            }
+            return;
+        }
+        //作为输出层计算结果 用柔性最大值，输出比值
+        public void Finala(double[] aFront)
+        {
+            double allSum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                a[i] = 0;
+                for (int j = 0; j < frontLength; j++)
+                {
+                    a[i] += w[i, j] * aFront[j];
+                }
+                a[i] = a[i] + b[i];
+                if (a[i] > 700)
+                {
+                    for (int temp = 0;temp < 6;temp++)
+                    {
+                        if (temp != i)
+                        {
+                            a[temp] = 0;
+                        }
+                        else
+                        {
+                            a[temp] = 1;
+                        }
+                    }
+                    return;
+                }
+                a[i] = Math.Exp(a[i]);
+                allSum += a[i];
+            }
+            for (int i = 0; i < length; i++)
+            {
+                a[i] = a[i] / allSum;
+            }
+            return;
+        }
+        //作为中间层的偏导数
+        public void ChangeWAndB(double[] backChange, double[,] backWeight, int backLayer)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                change[i] = 0;
+                for (int n = 0; n < backLayer; n++)
+                {
+                    //change[i] += backChange[n] * Math.Exp(-aTemp[i]) / Math.Pow((1 + Math.Exp(-aTemp[i])), 2) * backWeight[n,i];
+                    change[i] += backChange[n] * a[i] * (1 - a[i]) * backWeight[n, i];
+                    //change[i] += backChange[n] * backWeight[n, i];
+                }
+            }
+        }
+        //作为最后一层的偏导数
+        public void ChangeFinal(int nRight)
+        {
+            double L2 = 0;
+            for(int i = 0;i < length;i++)
+            {
+                for (int j = 0;j < frontLength;j++)
+                {
+                    L2 += w[i, j];
+                }
+            }
+            for (int i = 0; i < length; i++)
+            {
+                if (nRight == i)
+                {
+                    //change[i] = frontA[i] - 1;
+                    change[i] = a[i] - 1 /*+ 0.1 * L2*/;
+                }
+                else
+                {
+                    change[i] = a[i];
+                }
+            }
+        }
+    }
+}
